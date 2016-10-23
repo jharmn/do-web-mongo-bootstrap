@@ -21,7 +21,7 @@ if [ "$1" != "" ] && [ "$2" != "" ] && [ "$3" != "" ] && [ "$4" != "" ] && [ "$5
   MONGO_IP=$(echo $MONGO_INFO | ./droplet_internal_ip.sh)
 
   # Restore mongodb$
-  ./restore_mongo.sh $MONGO_NAME $DB_NAME $DUMP_FOLDER
+  ./restore_mongo.sh $MONGO_NAME $MONGO_IP $DB_NAME $DUMP_FOLDER
 
   # Provision web application
   ./create_web.sh $WEB_NAME $DOCKER_IMAGE $MONGO_IP $REGION $SSH_FINGER
