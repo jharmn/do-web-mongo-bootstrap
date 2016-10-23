@@ -16,6 +16,8 @@ Install docker-machine, you'll need a DigitalOcean account and personal API toke
 
 ## Usage for `create.sh`
 
+`create.sh` is just a collection of calls to the other `*.sh` scripts. Any individual script can be used to complete individual steps. Consider `create.sh` a "quick start", and practical documentation for the other scripts.
+
 * Uses smallest DigitalOcean instance sizes...edit if you want to pay more.
 * Specifies local `~/.ssh/id_rsa.pub` for `ssh_key` when creating droplets (creates key in DO as well)). This means you can use `docker-machine ssh WEB_NAME|MONGO_NAME` or `ssh WEB_NAME|MONGO_NAME`, implictly using `ssh`.
 * Tags all instances with `TAG` to keep your droplet list organized.
@@ -31,11 +33,11 @@ Install docker-machine, you'll need a DigitalOcean account and personal API toke
 * Uses `centurylink/watchtower` to automagically update your `DOCKER_IMAGE`.
 
 ``` bash
-create.sh DOCKER_IMAGE DUMP_FOLDER DB_NAME REGION WEB_NAME MONGO_NAME TAG
+create.sh REGION MONGO_NAME WEB_NAME DOCKER_IMAGE DUMP_FOLDER DB_NAME TAG
 ```
 
 ``` bash
-./create.sh "quay.io/user/docker-image" "~/dump/my_db/*" "db_name" "fra1" "web-1" "mongo-1" "cool-tag"
+./create.sh "fra1" "mongo-1" "web-1" "quay.io/user/docker-image" "~/dump/my_db/*" "db_name" "cool-tag"
 ```
 
 ## Usage for `update_domain.sh`
