@@ -1,4 +1,6 @@
-if [ "$1" != "" ]; then
+#!/bin/bash
+
+if [ $1!="" ]; then
   DROPLET_NAME=$1
 
   DROPLET_LIST=$(curl -s -H "Content-Type: application/json" -H "Authorization: Bearer $DOTOKEN" "https://api.digitalocean.com/v2/droplets?per_page=200")

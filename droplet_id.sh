@@ -1,4 +1,5 @@
 #!/bin/bash
+
 if [ -t 0 ]; then
   DROPLET_INFO=$1
 else

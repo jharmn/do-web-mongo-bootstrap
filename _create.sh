@@ -5,31 +5,22 @@
 
 source ${1:-default.cfg}
 
+# Add SSH fingerprint to DO account
 SSH_FINGER=$(./add_ssh.sh)
 
 # Provision mongo
-./create_mongo.sh $MONGO_NAME $REGION $SSH_FINGER
-MONGO_INFO=$(./droplet_info.sh $MONGO_NAME)
-MONGO_ID=$(echo $MONGO_INFO | ./droplet_id.sh)
-MONGO_IP=$(echo $MONGO_INFO | ./droplet_internal_ip.sh)
+./create_mongo.sh
+./prepare_mongo.sh
 
-# Restore mongodb$
-./restore_mongo.sh $MONGO_NAME $MONGO_IP $DB_NAME $DUMP_FOLDER
+# Restore mongodb
+if [ $DUMP_FOLDER != "" ]; then
+  ./restore_mongo.sh
+fi
 
-# Provision web application
-./create_web.sh $WEB_NAME $DOCKER_IMAGE $MONGO_IP $REGION $SSH_FINGER
-WEB_INFO=$(./droplet_info.sh $WEB_NAME)
-WEB_ID=$(echo $WEB_INFO | ./droplet_id.sh)  
-WEB_IP=$(echo $WEB_INFO | ./droplet_internal_ip.sh)
+# Provision web droplet
+./create_web.sh
+./prepare_web.sh
+./update_floating_ip.sh
 
-# Secure droplets
-./secure_web.sh $WEB_NAME
-./secure_mongo.sh $MONGO_NAME $WEB_IP
-
-# Tag droplets
-./tag_droplet.sh $WEB_ID $TAG
-./tag_droplet.sh $MONGO_ID $TAG
-
-# Monitoring
-docker-machine ssh $API_NAME docker run -d --name dd-agent -e DD_HOSTNAME=$API_NAME -e TAGS=$TAG -v /var/run/docker.sock:/var/run/docker.sock:ro -v /proc/:/host/proc/:ro -v /sys/fs/cgroup/:/host/sys/fs/cgroup:ro -e API_KEY=$DDTOKEN datadog/docker-dd-agent:latest
-docker-machine ssh $MONGO_NAME docker run -d --name dd-agent -e DD_HOSTNAME=$MONGO_NAME -e TAGS=$TAG -v /var/run/docker.sock:/var/run/docker.sock:ro -v /proc/:/host/proc/:ro -v /sys/fs/cgroup/:/host/sys/fs/cgroup:ro -e API_KEY=$DDTOKEN datadog/docker-dd-agent:latest
+# Secure mongo (must run after web)
+./secure_mongo.sh

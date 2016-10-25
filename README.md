@@ -1,7 +1,9 @@
 # do-web-mongo-bootstrap
 
+A collection of simple bash scripts for creating droplets on DigitalOcean with `docker-machine`. Currently focused on `mongodb` for the database.
+
 This simply sets up 2 droplets on DigitalOcean:
-* A mongodb, restored with your dump. Mongodb runs natively (not in Docker), but it's created with docker-machine so you can control it easy, and add dockers to it.
+* A `mongodb` droplet, restored with your dump. Mongodb runs natively (not in Docker), but it's created with docker-machine so you can control it easy, and add dockers to it.
 * A docker image running your web application.
 
 Creates DigitalOcean droplets using docker-machine, using simple shell scripts. This is not super configurable, and doesn't use any fancy Ansible/Terraform/etc tools...call me old-fashioned, but bash scripts tend to last.   
@@ -16,55 +18,59 @@ Install docker engine & docker-machine, you'll need a DigitalOcean account and p
 
 * Set environment variable for `DOTOKEN` (your personal API token at DigitalOcean))
 * Set environment variables for `QUAYUSER` and `QUAYTOKEN` if your Docker image is hosted at Quay.io (hub.docker.com if not specified).
-* Set environment variables for `DDTOKEN` to setup basic Datadog monitoring.
+* Set environment variables for `DDTOKEN` to enable basic Datadog monitoring.
 
 ## Configuration file
 
-Copy `sample.cfg` to `default.cfg` and modify values for your own use. Scripts starting with `_` (e.g. `_create.sh` and `_restore.sh`) read from `default.cfg`. 
+Copy `sample.cfg` to `default.cfg` and modify values for your own use. As it stands, all keys in `sample.cfg` must be provided. The majority of the scripts read from this file.
 
 ## Creating droplets with `_create.sh`
 
-`_create.sh` is just a collection of calls to the other `*.sh` scripts. Any individual script can be used to complete individual steps. Consider `_create.sh` a "quick start", and practical documentation for the other scripts.
+`_create.sh` is simply a collection of calls to the other `*.sh` scripts. Any individual script can be used to complete individual steps. Consider `_create.sh` a "quick start", and practical documentation for the other scripts.
 
-* Uses smallest DigitalOcean instance sizes...edit if you want to pay more.
-* Specifies local `~/.ssh/id_rsa.pub` for `ssh_key` when creating droplets (creates key in DO as well)). This means you can use `docker-machine ssh WEB_NAME|MONGO_NAME` or `ssh WEB_NAME|MONGO_NAME`, implictly using `ssh`.
+* Specifies local `~/.ssh/id_rsa.pub` for `ssh_key` when creating droplets (creates key in DO account as well)). This means you can use `docker-machine ssh WEB_NAME|MONGO_NAME` or `ssh WEB_NAME|MONGO_NAME`, implictly using `ssh`.
 * Tags all instances with `TAG` to keep your droplet list organized.
-* Runs `apt update && apt upgrade` on all new droplets.
-* Creates mongodb droplet (currently with Ubuntu 14.04), restores from `DUMP` folder.
+* Runs `apt update && apt upgrade` on all new Ubuntu-based droplets.
+* Creates "mongodb" droplet (currently uses Ubuntu 14.04 per DO), restores from `DUMP_FOLDER` folder.
 * Creates secure communication between web application and mongodb.
   * Uses private networking and `ufw` rules to secure mongodb.
   * Secures mongodb to only accept requests on private network from web host.
   * Caveat: uses no password on mongodb.
-* Creates docker Ubuntu 16.04 droplet, installs `DOCKER_IMAGE`.
 * *Assumes port 8080* running docker image, maps to port 80 on droplet.
 * *Assumes* your docker image looks for `MONGO_HOST` as an environment variable
 * Uses `centurylink/watchtower` to automagically update your `DOCKER_IMAGE`.
+* If `DDTOKEN` is set, a `dd-agent` will be created on all boxes for Datadog basic monitoring.
+* Updates floating IP if specified in `.cfg` file (`FLOATING_IP`).
+
+### Usage
 
 ``` bash
 ./_create.sh
 ```
 
-## Usage for `update_domain.sh`
-
-If you have DNS hosting with DigitalOcean, run this script to update the hostname for the docker droplet you created with docker-machine.
+Or pass a specific `.cfg` file:
 
 ``` bash
-./update_domain.sh "@" "mywebsite.com" "web-1"
+./_create.sh my-site.cfg
 ```
+
+## Generic scripts
+
+### Droplet info
+
+`droplet_info.sh` retrieves a single droplet's JSON object. That data can be piped into `droplet_id.sh` (for the DO Droplet ID) or `droplet_internal_ip.sh` (for the internal IP), both of which are not available from `docker-machine` directly.
 
 ## TODO
 
 * Add HAProxy for load balancing.
   * Relay to private IP for web app server(s).
   * Script to add web app instances behind HAProxy.
-* Add floating IP configuration.
-* Classier bash parameter handling, more config-driven scripts.
+  * Varnish for caching.
 * Datadog app/db-specific monitoring.
 * Maybe use `docker-compose` for more deploy flexibility.
 * Production-level security configuration.
   * Don't use root on droplets for docker etc.
-* Support for `https`.
- Varnish for caching.
+* Support for `https` on the docker web image.
 * Add extra web application hosts behind load balancer.
   * Autoscaling would be nice.
 * Geodistributed servers with geodns and mongo replication would be really nice.
